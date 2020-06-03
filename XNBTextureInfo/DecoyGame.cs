@@ -9,8 +9,6 @@ namespace XNBTextureInfo
     {
         private GraphicsDeviceManager graphics;
 
-        public Texture2D[] ItemTextures { get; private set; }
-
         public DecoyGame()
         {
             Content.RootDirectory = @"Content\Images";
@@ -27,8 +25,6 @@ namespace XNBTextureInfo
 
             base.Initialize();
 
-            SerializeContent();
-
             Exit();
         }
 
@@ -36,34 +32,28 @@ namespace XNBTextureInfo
         {
             DirectoryInfo dir = new DirectoryInfo(Content.RootDirectory);
             string[] textures = dir.GetFiles("Item_*.xnb").Select(info => info.Name.Remove(info.Name.LastIndexOf('.'))).ToArray();
-            ItemTextures = new Texture2D[textures.Length];
-            for (int i = 0; i < textures.Length; i++)
+
+            using (StreamWriter writer = new StreamWriter(new FileStream("ItemTexture.json", FileMode.Create, FileAccess.Write, FileShare.Write)))
             {
-                ItemTextures[i] = Content.Load<Texture2D>(textures[i]);
+                string[] textureData = new string[textures.Length];
+
+                writer.Write("[");
+
+                for (int i = 0; i < textures.Length; i++)
+                {
+                    string name = textures[i];
+                    Texture2D texture = Content.Load<Texture2D>(name);
+                    textureData[i] = $"{{\"Id\":{name.Substring(name.IndexOf('_') + 1)},\"Width\":{texture.Width},\"Height\":{texture.Height}}}";
+                }
+                writer.Write(string.Join(",", textureData));
+
+                writer.Write("]");
             }
         }
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-        }
-
-        public void SerializeContent()
-        {
-            using (StreamWriter writer = new StreamWriter(new FileStream("ItemTexture.json", FileMode.Create, FileAccess.Write, FileShare.Write)))
-            {
-                string[] textureData = new string[ItemTextures.Length];
-
-                writer.Write("[");
-
-                for (int i = 0; i < ItemTextures.Length; i++)
-                {
-                    textureData[i] = $"{{\"Id\":{i},\"Width\":{ItemTextures[i].Width},\"Height\":{ItemTextures[i].Height}}}";
-                }
-                writer.Write(string.Join(",", textureData));
-
-                writer.Write("]");
-            }
         }
     }
 }
